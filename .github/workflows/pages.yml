@@ -1,0 +1,47 @@
+name: Deploy Pages
+
+# THROWAWAY. This job exists only to prove the archive host resolves through
+# the Actions deploy path before Phase 5 depends on it. Phase 5 replaces this
+# whole job with the aptly publish job, which uploads the signed archive tree
+# instead of site/. Do not build on it.
+#
+# Deliberately NOT the suggested Jekyll workflow: the archive is a static
+# file tree that must be served byte-for-byte, and Jekyll would try to
+# process it. upload-pages-artifact serves the artifact as-is.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race the same environment.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
